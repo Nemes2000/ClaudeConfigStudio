@@ -46,11 +46,9 @@ mac:
         - arm64
   icon: build/icon.icns
   category: public.app-category.developer-tools
-  hardenedRuntime: true
+  hardenedRuntime: false
   gatekeeperAssess: false
-  entitlements: build/entitlements.mac.plist
-  entitlementsInherit: build/entitlements.mac.plist
-  # notarize via APPLE_ID / APPLE_TEAM_ID / APPLE_APP_SPECIFIC_PASSWORD env vars
+  # notarize: false — no cert configured; enable hardenedRuntime + notarize when cert is available
   notarize: false
 
 dmg:

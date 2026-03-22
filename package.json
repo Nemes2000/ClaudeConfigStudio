@@ -11,8 +11,8 @@
     "start": "env -u ELECTRON_RUN_AS_NODE electron .",
     "lint": "eslint src --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
-    "test": "jest --testPathPattern=tests/unit",
-    "test:unit": "jest --testPathPattern=tests/unit",
+    "test": "jest",
+    "test:unit": "jest",
     "test:integration": "playwright test",
     "package": "npm run build && electron-builder"
   },

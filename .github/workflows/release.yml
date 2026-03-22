@@ -63,29 +63,36 @@ jobs:
       - name: Rebuild native modules for Electron
         run: npx electron-rebuild -f -w keytar
 
-      # ── macOS: code sign + notarize (signing skipped if cert secrets not set)
+      # ── Detect whether signing secrets are available ───────────────────────
+      - name: Check signing secrets
+        id: signing
+        shell: bash
+        run: |
+          echo "mac=${{ secrets.MAC_CSC_LINK != '' }}" >> $GITHUB_OUTPUT
+          echo "win=${{ secrets.WIN_CSC_LINK != '' }}" >> $GITHUB_OUTPUT
+
+      # ── macOS: build (signed+notarized when cert available, unsigned otherwise)
       - name: Package (macOS)
         if: matrix.platform == 'mac'
         run: npx electron-builder --mac --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          # Disable keychain auto-discovery — sign only when CSC_LINK is explicitly set
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          CSC_LINK: ${{ steps.signing.outputs.mac == 'true' && secrets.MAC_CSC_LINK || '' }}
+          CSC_KEY_PASSWORD: ${{ steps.signing.outputs.mac == 'true' && secrets.MAC_CSC_KEY_PASSWORD || '' }}
+          APPLE_ID: ${{ steps.signing.outputs.mac == 'true' && secrets.APPLE_ID || '' }}
+          APPLE_TEAM_ID: ${{ steps.signing.outputs.mac == 'true' && secrets.APPLE_TEAM_ID || '' }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ steps.signing.outputs.mac == 'true' && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
 
-      # ── Windows: code sign (signing skipped if cert secrets not set) ───────
+      # ── Windows: build (signed when cert available, unsigned otherwise) ────
       - name: Package (Windows)
         if: matrix.platform == 'win'
         run: npx electron-builder --win --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          CSC_LINK: ${{ steps.signing.outputs.win == 'true' && secrets.WIN_CSC_LINK || '' }}
+          CSC_KEY_PASSWORD: ${{ steps.signing.outputs.win == 'true' && secrets.WIN_CSC_KEY_PASSWORD || '' }}
 
       # ── Linux: no signing required ─────────────────────────────────────────
       - name: Package (Linux)
