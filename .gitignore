@@ -1,0 +1,40 @@
+# Claude / DevContainer internals
+.claude/
+.devcontainer/
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# IDE and OS
+.idea/
+.vscode/
+*.suo
+*.user
+.DS_Store
+Thumbs.db
+
+# JavaScript / Node
+node_modules/
+dist/
+build/
+out/
+.npm/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.yarn/cache
+.pnp.*
+coverage/
+*.lcov
+
+# React
+.eslintcache
+
+# Electron builder output
+release/
