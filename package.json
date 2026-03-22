@@ -5,10 +5,10 @@
   "main": "dist/main/index.js",
   "private": true,
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "env -u ELECTRON_RUN_AS_NODE electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "start": "electron .",
+    "start": "env -u ELECTRON_RUN_AS_NODE electron .",
     "lint": "eslint src --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "test": "jest --testPathPattern=tests/unit",
@@ -31,8 +31,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
+    "@vitejs/plugin-react": "^4.7.0",
     "@types/fs-extra": "^11.0.4",
-
     "@types/jest": "^29.5.14",
     "@types/node": "^22.0.0",
     "@types/proper-lockfile": "^4.1.4",

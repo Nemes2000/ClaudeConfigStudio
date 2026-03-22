@@ -1,6 +1,6 @@
 import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'path'
-import log from 'electron-log'
+import log from 'electron-log/main'
 import { createAppServices } from './ipc/app-services'
 import { registerProjectHandlers } from './ipc/project-handlers'
 import { registerFileHandlers } from './ipc/file-handlers'
