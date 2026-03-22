@@ -10,8 +10,9 @@ import * as path from 'path'
  */
 test.describe('Electron App', () => {
   test('shows OnboardingWizard on first launch (no API key)', async () => {
+    const extraArgs = process.env.CI ? ['--no-sandbox'] : []
     const app = await electron.launch({
-      args: [path.join(__dirname, '../../dist/main/index.js')],
+      args: [...extraArgs, path.join(__dirname, '../../dist/main/index.js')],
       env: {
         ...process.env,
         NODE_ENV: 'test',
