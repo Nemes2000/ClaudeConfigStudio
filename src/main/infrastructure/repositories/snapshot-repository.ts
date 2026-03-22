@@ -23,7 +23,12 @@ export class SnapshotRepository implements ISnapshotRepository {
               ?.slice(0, 120) ?? ''
           // Timestamp embedded in filename: YYYY-MM-DDTHH-MM-SS-mmmZ.md
           const tsRaw = path.basename(entry.name, path.extname(entry.name))
-          const timestamp = new Date(tsRaw.replace(/-(?=\d{2}:|\d{2}Z)/g, ':'))
+          // Filename: YYYY-MM-DDTHH-MM-SS-mmmZ → replace dashes after T with colons/dot
+          const tsFixed = tsRaw.replace(
+            /T(\d{2})-(\d{2})-(\d{2})-(\d+)Z$/,
+            'T$1:$2:$3.$4Z',
+          )
+          const timestamp = new Date(tsFixed)
           snapshots.push({
             originalFilePath: absoluteFilePath,
             snapshotPath,
