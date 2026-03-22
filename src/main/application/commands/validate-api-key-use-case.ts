@@ -86,7 +86,7 @@ export async function validateApiKey(
   }
 
   return {
-    authState: createValidAuthState(),
+    authState: createValidAuthState('api-key'),
     reason: apiKey ? 'key-submitted' : 'startup',
   }
 }

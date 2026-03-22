@@ -59,6 +59,7 @@ export interface IpcAuthState {
   isValid: boolean
   keyPresent: boolean
   lastValidatedAt: string | null // ISO 8601
+  authMethod: 'api-key' | 'claude-account' | null
 }
 
 export interface IpcSuggestion {
@@ -193,6 +194,8 @@ export const IPC_CHANNELS = {
   // Auth
   AUTH_VALIDATE: 'auth:validate',
   AUTH_STATE_CHANGED: 'auth:state-changed', // push
+  AUTH_SIGN_IN_WITH_CLAUDE: 'auth:sign-in-with-claude',
+  AUTH_SIGN_OUT: 'auth:sign-out',
 
   // Suggestions
   SUGGESTION_REQUEST: 'suggestion:request',
@@ -372,6 +375,18 @@ export interface AuthValidateResponse {
   authState: IpcAuthState
   code?: string
   message?: string
+}
+
+export interface AuthSignInWithClaudeResponse {
+  ok: boolean
+  authState: IpcAuthState
+  reason: 'success' | 'cancelled' | 'error'
+  message?: string
+}
+
+export interface AuthSignOutResponse {
+  ok: boolean
+  authState: IpcAuthState
 }
 
 export interface SuggestionRequestPayload {
