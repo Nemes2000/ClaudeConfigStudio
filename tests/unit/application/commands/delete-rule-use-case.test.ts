@@ -1,5 +1,6 @@
 import { deleteRule } from '@main/application/commands/delete-rule-use-case'
 import type { ISnapshotRepository } from '@main/application/services/i-snapshot-repository'
+import * as path from 'path'
 
 jest.mock('fs/promises')
 jest.mock('@main/application/commands/snapshot-file-use-case')
@@ -31,7 +32,7 @@ describe('deleteRule', () => {
 
     expect(snapshotFile).toHaveBeenCalledWith(
       expect.objectContaining({
-        filePath: '/home/user/.claude/rules/test-rule.md',
+        filePath: path.normalize('/home/user/.claude/rules/test-rule.md'),
         snapshotRepo: mockSnapshotRepo,
         baseDir: '/home/user',
       }),
@@ -46,7 +47,7 @@ describe('deleteRule', () => {
       baseDir: '/home/user',
     })
 
-    expect(fs.unlink).toHaveBeenCalledWith('/home/user/.claude/rules/my-rule.md')
+    expect(fs.unlink).toHaveBeenCalledWith(path.normalize('/home/user/.claude/rules/my-rule.md'))
   })
 
   it('should construct correct file path from slug', async () => {
@@ -57,7 +58,7 @@ describe('deleteRule', () => {
       baseDir: '/home/user',
     })
 
-    expect(fs.unlink).toHaveBeenCalledWith('/home/user/.claude/rules/complex-rule-name.md')
+    expect(fs.unlink).toHaveBeenCalledWith(path.normalize('/home/user/.claude/rules/complex-rule-name.md'))
   })
 
   it('should throw error if file deletion fails', async () => {

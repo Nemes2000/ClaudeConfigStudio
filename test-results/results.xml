@@ -1,0 +1,182 @@
+<testsuites id="" name="" tests="81" failures="0" skipped="0" errors="0" time="52.195714">
+<testsuite name="backup-history.test.ts" timestamp="2026-03-22T20:09:34.869Z" hostname="electron" tests="5" failures="0" skipped="0" time="2.915" errors="0">
+<testcase name="backup history shows no-history state when no snapshots exist" classname="backup-history.test.ts" time="0.646">
+</testcase>
+<testcase name="backup:created push event does not crash the renderer" classname="backup-history.test.ts" time="0.563">
+</testcase>
+<testcase name="backup history renders a snapshot card when snapshots are available" classname="backup-history.test.ts" time="0.558">
+</testcase>
+<testcase name="successful restore does not throw an error" classname="backup-history.test.ts" time="0.539">
+</testcase>
+<testcase name="rollback:completed push event is received without crash" classname="backup-history.test.ts" time="0.609">
+</testcase>
+</testsuite>
+<testsuite name="electron-launch.test.ts" timestamp="2026-03-22T20:09:34.869Z" hostname="electron" tests="1" failures="0" skipped="0" time="0.466" errors="0">
+<testcase name="Electron App › shows OnboardingWizard on first launch (no API key)" classname="electron-launch.test.ts" time="0.466">
+</testcase>
+</testsuite>
+<testsuite name="file-operations.test.ts" timestamp="2026-03-22T20:09:34.869Z" hostname="electron" tests="12" failures="0" skipped="0" time="7.236" errors="0">
+<testcase name="file:read returns file content" classname="file-operations.test.ts" time="0.594">
+</testcase>
+<testcase name="file:read error response is returned for missing file" classname="file-operations.test.ts" time="0.574">
+</testcase>
+<testcase name="file:write returns null data on success" classname="file-operations.test.ts" time="0.556">
+</testcase>
+<testcase name="file:delete returns null data on success" classname="file-operations.test.ts" time="0.568">
+</testcase>
+<testcase name="file:update-section returns null data on success" classname="file-operations.test.ts" time="0.587">
+</testcase>
+<testcase name="file:delete-section returns null data on success" classname="file-operations.test.ts" time="0.585">
+</testcase>
+<testcase name="file:add-section returns null data on success" classname="file-operations.test.ts" time="0.62">
+</testcase>
+<testcase name="file:add-item returns null data on success" classname="file-operations.test.ts" time="0.621">
+</testcase>
+<testcase name="file:update-item returns null data on success" classname="file-operations.test.ts" time="0.671">
+</testcase>
+<testcase name="file:delete-item returns null data on success" classname="file-operations.test.ts" time="0.591">
+</testcase>
+<testcase name="file:reorder-item returns null data on success" classname="file-operations.test.ts" time="0.666">
+</testcase>
+<testcase name="file:read with path traversal returns an error" classname="file-operations.test.ts" time="0.603">
+</testcase>
+</testsuite>
+<testsuite name="mcp.test.ts" timestamp="2026-03-22T20:09:34.869Z" hostname="electron" tests="14" failures="0" skipped="0" time="8.877" errors="0">
+<testcase name="mcp:list-marketplace returns module list" classname="mcp.test.ts" time="0.649">
+</testcase>
+<testcase name="mcp:list-marketplace returns empty array when no modules available" classname="mcp.test.ts" time="0.633">
+</testcase>
+<testcase name="mcp:validate-compatibility returns compatible result" classname="mcp.test.ts" time="0.687">
+</testcase>
+<testcase name="mcp:validate-compatibility returns incompatible with reason" classname="mcp.test.ts" time="0.605">
+</testcase>
+<testcase name="mcp:install returns installation record on success" classname="mcp.test.ts" time="0.645">
+</testcase>
+<testcase name="mcp:install without required auth key returns error" classname="mcp.test.ts" time="0.653">
+</testcase>
+<testcase name="mcp:list-installed returns array of installations" classname="mcp.test.ts" time="0.638">
+</testcase>
+<testcase name="mcp:list-installed returns empty array when none installed" classname="mcp.test.ts" time="0.613">
+</testcase>
+<testcase name="mcp:toggle enable returns null data" classname="mcp.test.ts" time="0.626">
+</testcase>
+<testcase name="mcp:toggle disable returns null data" classname="mcp.test.ts" time="0.662">
+</testcase>
+<testcase name="mcp:uninstall returns null data on success" classname="mcp.test.ts" time="0.659">
+</testcase>
+<testcase name="mcp:set-auth-key returns null data on success" classname="mcp.test.ts" time="0.658">
+</testcase>
+<testcase name="auth:validate returns current auth state" classname="mcp.test.ts" time="0.594">
+</testcase>
+<testcase name="suggestion:request returns without crash" classname="mcp.test.ts" time="0.555">
+</testcase>
+</testsuite>
+<testsuite name="onboarding.test.ts" timestamp="2026-03-22T20:09:34.869Z" hostname="electron" tests="11" failures="0" skipped="0" time="6.556" errors="0">
+<testcase name="shows the API key input and submit button" classname="onboarding.test.ts" time="0.532">
+</testcase>
+<testcase name="API key input is of type password" classname="onboarding.test.ts" time="0.612">
+</testcase>
+<testcase name="submit button is disabled when API key input is empty" classname="onboarding.test.ts" time="0.619">
+</testcase>
+<testcase name="submit button becomes enabled when key is typed" classname="onboarding.test.ts" time="0.56">
+</testcase>
+<testcase name="submitting an invalid key shows the error-message" classname="onboarding.test.ts" time="0.655">
+</testcase>
+<testcase name="error message cleared when user types a new key" classname="onboarding.test.ts" time="0.657">
+</testcase>
+<testcase name="network-error banner shown when stored key is present but invalid" classname="onboarding.test.ts" time="0.521">
+</testcase>
+<testcase name="network-error banner has a Retry button" classname="onboarding.test.ts" time="0.572">
+</testcase>
+<testcase name="retry button calls auth:validate and updates state on success" classname="onboarding.test.ts" time="0.605">
+</testcase>
+<testcase name="valid key submission + auth:state-changed push transitions to workspace" classname="onboarding.test.ts" time="0.6">
+</testcase>
+<testcase name="wizard remains visible when auth:validate returns ok:false" classname="onboarding.test.ts" time="0.623">
+</testcase>
+</testsuite>
+<testsuite name="skill-crud.test.ts" timestamp="2026-03-22T20:09:34.869Z" hostname="electron" tests="11" failures="0" skipped="0" time="7.098" errors="0">
+<testcase name="skill:create returns file path and content on success" classname="skill-crud.test.ts" time="0.682">
+</testcase>
+<testcase name="skill:create with duplicate slug surfaces an error response" classname="skill-crud.test.ts" time="0.616">
+</testcase>
+<testcase name="skill:delete returns null data on success" classname="skill-crud.test.ts" time="0.626">
+</testcase>
+<testcase name="skill:toggle enable returns updated enabled state" classname="skill-crud.test.ts" time="0.647">
+</testcase>
+<testcase name="skill:toggle disable returns updated disabled state" classname="skill-crud.test.ts" time="0.614">
+</testcase>
+<testcase name="skill:validate-structure returns valid=true for well-formed skill" classname="skill-crud.test.ts" time="0.664">
+</testcase>
+<testcase name="skill:validate-structure returns missing sections for bare file" classname="skill-crud.test.ts" time="0.642">
+</testcase>
+<testcase name="rule:create returns file path and content" classname="skill-crud.test.ts" time="0.685">
+</testcase>
+<testcase name="rule:delete returns null data on success" classname="skill-crud.test.ts" time="0.653">
+</testcase>
+<testcase name="rule:toggle responds correctly" classname="skill-crud.test.ts" time="0.611">
+</testcase>
+<testcase name="hook:toggle responds correctly" classname="skill-crud.test.ts" time="0.658">
+</testcase>
+</testsuite>
+<testsuite name="skill-graph.test.ts" timestamp="2026-03-22T20:09:34.869Z" hostname="electron" tests="10" failures="0" skipped="0" time="6.272" errors="0">
+<testcase name="empty state message is shown when graph has no nodes" classname="skill-graph.test.ts" time="0.648">
+</testcase>
+<testcase name="single enabled node is rendered in the graph" classname="skill-graph.test.ts" time="0.692">
+</testcase>
+<testcase name="multiple nodes are all rendered" classname="skill-graph.test.ts" time="0.63">
+</testcase>
+<testcase name="disabled node is rendered with reduced opacity" classname="skill-graph.test.ts" time="0.658">
+</testcase>
+<testcase name="warning badge is shown for node with missing frontmatter" classname="skill-graph.test.ts" time="0.565">
+</testcase>
+<testcase name="no warning badge for node with complete frontmatter" classname="skill-graph.test.ts" time="0.594">
+</testcase>
+<testcase name="clicking a node does not crash the renderer" classname="skill-graph.test.ts" time="0.662">
+</testcase>
+<testcase name="graph with edges between nodes renders without crash" classname="skill-graph.test.ts" time="0.589">
+</testcase>
+<testcase name="broken edge (missing dependency) renders without crash" classname="skill-graph.test.ts" time="0.606">
+</testcase>
+<testcase name="graph handles multiple successive graph:updated push events" classname="skill-graph.test.ts" time="0.628">
+</testcase>
+</testsuite>
+<testsuite name="suggestion-sidebar.test.ts" timestamp="2026-03-22T20:09:34.869Z" hostname="electron" tests="8" failures="0" skipped="0" time="5.107" errors="0">
+<testcase name="suggestion sidebar is visible in the workspace" classname="suggestion-sidebar.test.ts" time="0.575">
+</testcase>
+<testcase name="no-suggestions empty state is shown when push delivers empty array" classname="suggestion-sidebar.test.ts" time="0.652">
+</testcase>
+<testcase name="three suggestion cards rendered after suggestion:ready push" classname="suggestion-sidebar.test.ts" time="0.656">
+</testcase>
+<testcase name="suggestion card contains title and description" classname="suggestion-sidebar.test.ts" time="0.6">
+</testcase>
+<testcase name="warning severity suggestion is rendered" classname="suggestion-sidebar.test.ts" time="0.684">
+</testcase>
+<testcase name="error severity suggestion is rendered" classname="suggestion-sidebar.test.ts" time="0.663">
+</testcase>
+<testcase name="sidebar updates correctly on successive suggestion:ready events" classname="suggestion-sidebar.test.ts" time="0.611">
+</testcase>
+<testcase name="suggestions replaced (not appended) on new suggestion:ready push" classname="suggestion-sidebar.test.ts" time="0.666">
+</testcase>
+</testsuite>
+<testsuite name="workspace.test.ts" timestamp="2026-03-22T20:09:34.869Z" hostname="electron" tests="9" failures="0" skipped="0" time="5.77" errors="0">
+<testcase name="workspace page is visible after authentication" classname="workspace.test.ts" time="0.605">
+</testcase>
+<testcase name="onboarding wizard is hidden after authentication" classname="workspace.test.ts" time="0.626">
+</testcase>
+<testcase name="skill graph view is rendered inside workspace" classname="workspace.test.ts" time="0.693">
+</testcase>
+<testcase name="suggestion sidebar is rendered inside workspace" classname="workspace.test.ts" time="0.787">
+</testcase>
+<testcase name="project:discovered push event does not crash the renderer" classname="workspace.test.ts" time="0.621">
+</testcase>
+<testcase name="graph:updated push event with nodes re-renders the graph" classname="workspace.test.ts" time="0.618">
+</testcase>
+<testcase name="graph:updated with empty nodes shows empty-state message" classname="workspace.test.ts" time="0.609">
+</testcase>
+<testcase name="auth:state-changed push with isValid=false re-shows the wizard" classname="workspace.test.ts" time="0.584">
+</testcase>
+<testcase name="config:changed push event is handled without crash" classname="workspace.test.ts" time="0.627">
+</testcase>
+</testsuite>
+</testsuites>

@@ -3,13 +3,14 @@ import {
   isFullyDisabled,
   type RuleHierarchy,
 } from '../../../src/main/domain/models/rule-hierarchy'
+import * as path from 'path'
 
 describe('hasSupplement', () => {
   it('returns true when supplementPath is not null', () => {
     const rule: RuleHierarchy = {
       slug: 'coding-rules',
-      globalPath: '/home/user/.claude/rules/coding-rules.md',
-      supplementPath: '/home/user/project/.claude/rules/coding-rules.md',
+      globalPath: path.normalize('/home/user/.claude/rules/coding-rules.md'),
+      supplementPath: path.normalize('/home/user/project/.claude/rules/coding-rules.md'),
       isGlobalEnabled: true,
       isSupplementEnabled: true,
     }
@@ -32,8 +33,8 @@ describe('hasSupplement', () => {
   it('returns true even when supplement is disabled', () => {
     const rule: RuleHierarchy = {
       slug: 'coding-rules',
-      globalPath: '/home/user/.claude/rules/coding-rules.md',
-      supplementPath: '/home/user/project/.claude/rules/coding-rules.md',
+      globalPath: path.normalize('/home/user/.claude/rules/coding-rules.md'),
+      supplementPath: path.normalize('/home/user/project/.claude/rules/coding-rules.md'),
       isGlobalEnabled: true,
       isSupplementEnabled: false,
     }
@@ -58,8 +59,8 @@ describe('isFullyDisabled', () => {
   it('returns true when global is disabled even if supplement is enabled', () => {
     const rule: RuleHierarchy = {
       slug: 'coding-rules',
-      globalPath: '/home/user/.claude/rules/coding-rules.md',
-      supplementPath: '/home/user/project/.claude/rules/coding-rules.md',
+      globalPath: path.normalize('/home/user/.claude/rules/coding-rules.md'),
+      supplementPath: path.normalize('/home/user/project/.claude/rules/coding-rules.md'),
       isGlobalEnabled: false,
       isSupplementEnabled: true,
     }
@@ -70,8 +71,8 @@ describe('isFullyDisabled', () => {
   it('returns true when supplement is explicitly disabled', () => {
     const rule: RuleHierarchy = {
       slug: 'coding-rules',
-      globalPath: '/home/user/.claude/rules/coding-rules.md',
-      supplementPath: '/home/user/project/.claude/rules/coding-rules.md',
+      globalPath: path.normalize('/home/user/.claude/rules/coding-rules.md'),
+      supplementPath: path.normalize('/home/user/project/.claude/rules/coding-rules.md'),
       isGlobalEnabled: true,
       isSupplementEnabled: false,
     }
@@ -82,8 +83,8 @@ describe('isFullyDisabled', () => {
   it('returns false when both global and supplement are enabled', () => {
     const rule: RuleHierarchy = {
       slug: 'coding-rules',
-      globalPath: '/home/user/.claude/rules/coding-rules.md',
-      supplementPath: '/home/user/project/.claude/rules/coding-rules.md',
+      globalPath: path.normalize('/home/user/.claude/rules/coding-rules.md'),
+      supplementPath: path.normalize('/home/user/project/.claude/rules/coding-rules.md'),
       isGlobalEnabled: true,
       isSupplementEnabled: true,
     }
@@ -106,8 +107,8 @@ describe('isFullyDisabled', () => {
   it('returns false when global is enabled and supplement is null (not disabled)', () => {
     const rule: RuleHierarchy = {
       slug: 'coding-rules',
-      globalPath: '/home/user/.claude/rules/coding-rules.md',
-      supplementPath: '/home/user/project/.claude/rules/coding-rules.md',
+      globalPath: path.normalize('/home/user/.claude/rules/coding-rules.md'),
+      supplementPath: path.normalize('/home/user/project/.claude/rules/coding-rules.md'),
       isGlobalEnabled: true,
       isSupplementEnabled: null,
     }
@@ -118,8 +119,8 @@ describe('isFullyDisabled', () => {
   it('returns true when global is disabled regardless of supplement', () => {
     const rule: RuleHierarchy = {
       slug: 'coding-rules',
-      globalPath: '/home/user/.claude/rules/coding-rules.md',
-      supplementPath: '/home/user/project/.claude/rules/coding-rules.md',
+      globalPath: path.normalize('/home/user/.claude/rules/coding-rules.md'),
+      supplementPath: path.normalize('/home/user/project/.claude/rules/coding-rules.md'),
       isGlobalEnabled: false,
       isSupplementEnabled: null,
     }

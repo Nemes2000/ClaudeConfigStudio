@@ -1,5 +1,6 @@
 import { McpInstallationRepository } from '@main/infrastructure/repositories/mcp-installation-repository'
 import type { McpInstallation } from '@main/domain/models/mcp'
+import * as path from 'path'
 
 jest.mock('fs/promises')
 
@@ -45,7 +46,7 @@ describe('McpInstallationRepository', () => {
 
       await repo.findByName('my-module', '/home/user/.claude')
 
-      expect(fs.readFile).toHaveBeenCalledWith('/home/user/.claude/mcp/my-module.json', 'utf-8')
+      expect(fs.readFile).toHaveBeenCalledWith(path.normalize('/home/user/.claude/mcp/my-module.json'), 'utf-8')
     })
 
     it('should use name as moduleName when not specified in file', async () => {
@@ -136,7 +137,7 @@ describe('McpInstallationRepository', () => {
 
       const installation: McpInstallation = {
         moduleName: 'test-mcp',
-        configFilePath: '/home/user/.claude/mcp/test-mcp.json',
+        configFilePath: path.normalize('/home/user/.claude/mcp/test-mcp.json'),
         isEnabled: true,
         hasAuthKey: false,
         config: { apiUrl: 'https://api.example.com' },
@@ -150,7 +151,7 @@ describe('McpInstallationRepository', () => {
       await repo.save(installation)
 
       expect(jest.mocked(fs.chmod)).toHaveBeenCalledWith(
-        '/home/user/.claude/mcp/test-mcp.json',
+        path.normalize('/home/user/.claude/mcp/test-mcp.json'),
         0o600,
       )
     })
@@ -160,7 +161,7 @@ describe('McpInstallationRepository', () => {
 
       const installation: McpInstallation = {
         moduleName: 'test-mcp',
-        configFilePath: '/home/user/.claude/mcp/test-mcp.json',
+        configFilePath: path.normalize('/home/user/.claude/mcp/test-mcp.json'),
         isEnabled: true,
         hasAuthKey: false,
         config: {},
@@ -169,7 +170,7 @@ describe('McpInstallationRepository', () => {
       await repo.save(installation)
 
       expect(jest.mocked(fs.chmod)).toHaveBeenCalledWith(
-        '/home/user/.claude/mcp/test-mcp.json',
+        path.normalize('/home/user/.claude/mcp/test-mcp.json'),
         0o600,
       )
     })
@@ -181,7 +182,7 @@ describe('McpInstallationRepository', () => {
 
       await repo.delete('test-mcp', '/home/user/.claude')
 
-      expect(fs.unlink).toHaveBeenCalledWith('/home/user/.claude/mcp/test-mcp.json')
+      expect(fs.unlink).toHaveBeenCalledWith(path.normalize('/home/user/.claude/mcp/test-mcp.json'))
     })
 
     it('should throw error if delete fails', async () => {

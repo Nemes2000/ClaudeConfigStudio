@@ -1,5 +1,6 @@
 import { SkillNodeRepository } from '@main/infrastructure/repositories/skill-node-repository'
 import type { SkillNode } from '@main/domain/models/skill-node'
+import * as path from 'path'
 
 jest.mock('fs/promises')
 jest.mock('gray-matter')
@@ -77,7 +78,7 @@ Do this.`
       await repo.findBySlug('my-skill', '/home/user/.claude')
 
       expect(fs.readFile).toHaveBeenCalledWith(
-        '/home/user/.claude/skills/my-skill/SKILL.md',
+        path.normalize('/home/user/.claude/skills/my-skill/SKILL.md'),
         'utf-8',
       )
     })

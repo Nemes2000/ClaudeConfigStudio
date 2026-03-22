@@ -1,12 +1,13 @@
 import { toggleSkillNode, isOrchestrator, hasErrors, hasCycles } from '../../../src/main/domain/models/skill-node'
 import type { SkillNode, GraphValidation } from '../../../src/main/domain/models/skill-node'
+import * as path from 'path'
 
 const makeNode = (overrides: Partial<SkillNode> = {}): SkillNode => ({
   slug: 'test-skill',
   name: 'Test Skill',
   description: 'A test skill',
   version: '1.0.0',
-  filePath: '/home/user/.claude/skills/test-skill/SKILL.md',
+  filePath: path.normalize('/home/user/.claude/skills/test-skill/SKILL.md'),
   isEnabled: true,
   dependencies: [],
   mcpServers: [],

@@ -1,4 +1,5 @@
 import { resolveRuleHierarchy } from '@main/application/queries/resolve-rule-hierarchy-use-case'
+import * as path from 'path'
 
 jest.mock('fs/promises')
 jest.mock('gray-matter')
@@ -16,12 +17,12 @@ describe('resolveRuleHierarchy', () => {
 
   it('should resolve rule hierarchy from global and project directories', async () => {
     jest.mocked(fs.readdir).mockImplementation(async (dir: string | any) => {
-      if (dir === '/home/user/.claude/rules') {
+      if (dir === path.normalize('/home/user/.claude/rules')) {
         return [
           { name: 'rule1.md', isFile: () => true, isDirectory: () => false },
           { name: 'rule2.md', isFile: () => true, isDirectory: () => false },
         ] as any
-      } else if (dir === '/proj/.claude/rules') {
+      } else if (dir === path.normalize('/proj/.claude/rules')) {
         return [
           { name: 'rule1.md', isFile: () => true, isDirectory: () => false },
         ] as any
@@ -29,12 +30,12 @@ describe('resolveRuleHierarchy', () => {
       return []
     })
 
-    jest.mocked(fs.readFile).mockImplementation(async (path: string | any) => {
-      if (path === '/home/user/.claude/rules/rule1.md') {
+    jest.mocked(fs.readFile).mockImplementation(async (filePath: string | any) => {
+      if (filePath === path.normalize('/home/user/.claude/rules/rule1.md')) {
         return '---\nenabled: true\n---\n'
-      } else if (path === '/home/user/.claude/rules/rule2.md') {
+      } else if (filePath === path.normalize('/home/user/.claude/rules/rule2.md')) {
         return '---\nenabled: true\n---\n'
-      } else if (path === '/proj/.claude/rules/rule1.md') {
+      } else if (filePath === path.normalize('/proj/.claude/rules/rule1.md')) {
         return '---\nenabled: false\n---\n'
       }
       return ''
@@ -49,15 +50,15 @@ describe('resolveRuleHierarchy', () => {
 
     expect(result).toHaveLength(2)
     expect(result[0]!.slug).toBe('rule1')
-    expect(result[0]!.globalPath).toBe('/home/user/.claude/rules/rule1.md')
-    expect(result[0]!.supplementPath).toBe('/proj/.claude/rules/rule1.md')
+    expect(result[0]!.globalPath).toBe(path.normalize('/home/user/.claude/rules/rule1.md'))
+    expect(result[0]!.supplementPath).toBe(path.normalize('/proj/.claude/rules/rule1.md'))
     expect(result[1]!.slug).toBe('rule2')
     expect(result[1]!.supplementPath).toBeNull()
   })
 
   it('should return enabled status from frontmatter', async () => {
     jest.mocked(fs.readdir).mockImplementation(async (dir: any) => {
-      if (dir === '/home/user/.claude/rules') {
+      if (dir === path.normalize('/home/user/.claude/rules')) {
         return [{ name: 'test.md', isFile: () => true, isDirectory: () => false }] as any
       }
       return []
@@ -77,7 +78,7 @@ describe('resolveRuleHierarchy', () => {
 
   it('should default to enabled=true if not specified in frontmatter', async () => {
     jest.mocked(fs.readdir).mockImplementation(async (dir: any) => {
-      if (dir === '/home/user/.claude/rules') {
+      if (dir === path.normalize('/home/user/.claude/rules')) {
         return [{ name: 'test.md', isFile: () => true, isDirectory: () => false }] as any
       }
       return []
@@ -97,9 +98,9 @@ describe('resolveRuleHierarchy', () => {
 
   it('should handle missing global rules directory', async () => {
     jest.mocked(fs.readdir).mockImplementation(async (dir: any) => {
-      if (dir === '/home/user/.claude/rules') {
+      if (dir === path.normalize('/home/user/.claude/rules')) {
         throw new Error('ENOENT')
-      } else if (dir === '/proj/.claude/rules') {
+      } else if (dir === path.normalize('/proj/.claude/rules')) {
         return [{ name: 'rule.md', isFile: () => true, isDirectory: () => false }] as any
       }
       return []
@@ -118,9 +119,9 @@ describe('resolveRuleHierarchy', () => {
 
   it('should handle missing project rules directory', async () => {
     jest.mocked(fs.readdir).mockImplementation(async (dir: any) => {
-      if (dir === '/home/user/.claude/rules') {
+      if (dir === path.normalize('/home/user/.claude/rules')) {
         return [{ name: 'rule.md', isFile: () => true, isDirectory: () => false }] as any
-      } else if (dir === '/proj/.claude/rules') {
+      } else if (dir === path.normalize('/proj/.claude/rules')) {
         throw new Error('ENOENT')
       }
       return []
@@ -140,7 +141,7 @@ describe('resolveRuleHierarchy', () => {
 
   it('should skip non-markdown files', async () => {
     jest.mocked(fs.readdir).mockImplementation(async (dir: any) => {
-      if (dir === '/home/user/.claude/rules') {
+      if (dir === path.normalize('/home/user/.claude/rules')) {
         return [
           { name: 'rule.md', isFile: () => true, isDirectory: () => false },
           { name: 'README', isFile: () => true, isDirectory: () => false },
@@ -164,7 +165,7 @@ describe('resolveRuleHierarchy', () => {
 
   it('should skip directories', async () => {
     jest.mocked(fs.readdir).mockImplementation(async (dir: any) => {
-      if (dir === '/home/user/.claude/rules') {
+      if (dir === path.normalize('/home/user/.claude/rules')) {
         return [
           { name: 'rule.md', isFile: () => true, isDirectory: () => false },
           { name: 'subdir', isFile: () => false, isDirectory: () => true },
@@ -187,9 +188,9 @@ describe('resolveRuleHierarchy', () => {
 
   it('should set isSupplementEnabled=null when no supplement exists', async () => {
     jest.mocked(fs.readdir).mockImplementation(async (dir: any) => {
-      if (dir === '/home/user/.claude/rules') {
+      if (dir === path.normalize('/home/user/.claude/rules')) {
         return [{ name: 'rule.md', isFile: () => true, isDirectory: () => false }] as any
-      } else if (dir === '/proj/.claude/rules') {
+      } else if (dir === path.normalize('/proj/.claude/rules')) {
         return []
       }
       return []
@@ -209,9 +210,9 @@ describe('resolveRuleHierarchy', () => {
 
   it('should return supplement enabled status when supplement exists', async () => {
     jest.mocked(fs.readdir).mockImplementation(async (dir: any) => {
-      if (dir === '/home/user/.claude/rules') {
+      if (dir === path.normalize('/home/user/.claude/rules')) {
         return [{ name: 'rule.md', isFile: () => true, isDirectory: () => false }] as any
-      } else if (dir === '/proj/.claude/rules') {
+      } else if (dir === path.normalize('/proj/.claude/rules')) {
         return [{ name: 'rule.md', isFile: () => true, isDirectory: () => false }] as any
       }
       return []
@@ -239,7 +240,7 @@ describe('resolveRuleHierarchy', () => {
 
   it('should handle file read errors gracefully', async () => {
     jest.mocked(fs.readdir).mockImplementation(async (dir: any) => {
-      if (dir === '/home/user/.claude/rules') {
+      if (dir === path.normalize('/home/user/.claude/rules')) {
         return [{ name: 'rule.md', isFile: () => true, isDirectory: () => false }] as any
       }
       return []
