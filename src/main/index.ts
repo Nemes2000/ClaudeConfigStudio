@@ -1,7 +1,6 @@
 import { app, BrowserWindow, shell, ipcMain } from 'electron'
 import { join } from 'path'
 import log from 'electron-log/main'
-import { autoUpdater } from 'electron-updater'
 import { createAppServices } from './ipc/app-services'
 import { registerProjectHandlers } from './ipc/project-handlers'
 import { registerFileHandlers } from './ipc/file-handlers'
@@ -14,7 +13,6 @@ import { validateApiKey } from './application/commands/validate-api-key-use-case
 import { IPC_CHANNELS } from '../shared/ipc-channels'
 
 log.initialize()
-autoUpdater.logger = log
 
 let mainWindow: BrowserWindow | null = null
 const services = createAppServices()
@@ -92,20 +90,24 @@ app.whenReady().then(async () => {
 
   log.info({ component: 'main', op: 'ready' })
 
-  // Auto-update: check in background, notify renderer when update available
+  // Auto-update: check in background, notify renderer when update available.
+  // Loaded dynamically to avoid electron-updater constructing itself (and
+  // calling app.getVersion()) before app is ready, which crashes in dev/test.
   if (app.isPackaged) {
-    autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { autoUpdater } = require('electron-updater')
+    autoUpdater.logger = log
+    autoUpdater.checkForUpdatesAndNotify().catch((err: unknown) => {
       log.warn({ component: 'updater', op: 'check', err: String(err) })
     })
 
-    autoUpdater.on('update-available', (info) => {
+    autoUpdater.on('update-available', (info: unknown) => {
       mainWindow?.webContents.send('updater:update-available', info)
     })
-    autoUpdater.on('update-downloaded', (info) => {
+    autoUpdater.on('update-downloaded', (info: unknown) => {
       mainWindow?.webContents.send('updater:update-downloaded', info)
     })
 
-    // Allow renderer to trigger install-and-relaunch
     ipcMain.handle('updater:install', () => {
       autoUpdater.quitAndInstall()
     })
