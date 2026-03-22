@@ -29,8 +29,8 @@ extraResources:
 # Auto-update via GitHub Releases
 publish:
   provider: github
-  owner: anthropic
-  repo: claude-config-studio
+  owner: Nemes2000
+  repo: ClaudeConfigStudio
   releaseType: release
 
 # ─── macOS ───────────────────────────────────────────────────────────────────
@@ -82,8 +82,6 @@ win:
       arch:
         - x64
   icon: build/icon.ico
-  # Sign via WINDOWS_CSC_LINK / WINDOWS_CSC_KEY_PASSWORD env vars
-  certificateSubjectName: ""
   verifyUpdateCodeSignature: false
 
 nsis:
@@ -118,9 +116,6 @@ linux:
       arch:
         - x64
     - target: rpm
-      arch:
-        - x64
-    - target: snap
       arch:
         - x64
   icon: build/icon.png
@@ -159,14 +154,3 @@ rpm:
     - at-spi2-core
     - libuuid
 
-snap:
-  summary: Manage Claude Code .claude/ configuration folders
-  grade: stable
-  confinement: classic
-  plugs:
-    - default
-    - home
-    - removable-media
-    - network
-    - network-bind
-    - password-manager-service
