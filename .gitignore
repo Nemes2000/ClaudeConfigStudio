@@ -38,3 +38,4 @@ coverage/
 
 # Electron builder output
 release/
+test-results/
