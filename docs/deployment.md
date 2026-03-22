@@ -4,60 +4,82 @@ This document describes the build, packaging, and release process for Claude Con
 
 ## Build Pipeline Overview
 
-The deployment process consists of these stages:
+```
+Source (TypeScript + React)
+  └─→ electron-vite build        → dist/
+  └─→ electron-rebuild (keytar)  → native keytar.node
+  └─→ electron-builder           → platform installers (release/)
+  └─→ GitHub Actions             → publish to GitHub Releases
+```
 
-1. **Build** — Compile TypeScript and assets
-2. **Package** — Create platform-specific installers (Windows, macOS, Linux)
-3. **Code Sign** — Sign executables and installers with certificates
-4. **Generate SBOM** — Create Software Bill of Materials for each artifact
-5. **Release** — Publish to GitHub Releases with artifacts and documentation
+### Artifact Summary
+
+| Platform | Format | Size (approx.) | Install method |
+|---|---|---|---|
+| **Windows** | `.exe` (NSIS) | ~150 MB | Double-click wizard |
+| **Windows** | `.msi` | ~150 MB | `msiexec /i` or Group Policy |
+| **macOS** | `.dmg` | ~180 MB | Mount → drag to Applications |
+| **macOS** | `.zip` | ~180 MB | Auto-update delta |
+| **Linux** | `.AppImage` | ~106 MB | `chmod +x && ./app.AppImage` |
+| **Linux** | `.deb` | ~120 MB | `sudo dpkg -i` |
+| **Linux** | `.rpm` | ~120 MB | `sudo rpm -i` |
+| **Linux** | `.snap` | ~120 MB | `sudo snap install --dangerous` |
 
 ### Technology Stack
 
-- **Build tool**: electron-vite (combines Vite + Electron)
-- **Packager**: electron-builder (NSIS on Windows, DMG on macOS, AppImage/deb on Linux)
-- **Code signing**:
-  - macOS: `notarytool` (App Store notarization)
-  - Windows: EV (Extended Validation) code-signing certificate
-- **SBOM generation**: cyclonedx-node (CycloneDX format)
+- **Build tool**: electron-vite 3 (Vite 6 + Electron bundling)
+- **Packager**: electron-builder 25
+- **Auto-update**: electron-updater (GitHub Releases provider)
+- **Native rebuild**: @electron/rebuild (keytar on all platforms)
+- **Code signing**: CSC_LINK / WIN_CSC_LINK via CI secrets
+- **CI/CD**: GitHub Actions (parallel matrix: ubuntu / windows / macos)
+
+---
 
 ## Prerequisites
 
 ### For All Platforms
 
-- **Node.js 16+** (recommend 18 LTS or 20+)
-- **npm 9+**
+- **Node.js 20 LTS** (tested on 20.x)
+- **npm 10+**
 - **Git 2.34+**
-- **Artifact space**: 2GB free disk (development build artifacts)
+- **2 GB free disk** (build artifacts)
+
+### For Linux Builds
+
+```bash
+sudo apt-get install -y \
+  libsecret-1-dev libsecret-1-0 \
+  libgtk-3-dev rpm snapcraft fakeroot \
+  build-essential python3
+```
+
+> `libsecret-1-0` is also a **runtime dependency** for end users — it is declared in the `.deb` `Depends:` field so it installs automatically.
 
 ### For macOS Builds
 
-- **macOS 11+** (for Xcode command-line tools)
-- **Developer ID Application certificate** from Apple Developer account
-- **Notarization credentials** (Apple ID or app-specific password for notarytool)
-- **Xcode**: `xcode-select --install` to set up command-line tools
+- **macOS 12+**
+- **Xcode command-line tools**: `xcode-select --install`
+- **Developer ID Application certificate** from Apple Developer account (for signing)
+- **notarytool credentials** (Apple ID + app-specific password + team ID) for notarization
 
 ### For Windows Builds
 
 - **Windows 10+ or Windows Server 2019+**
-- **Visual Studio Build Tools 2015+** or Visual Studio 2019+ (for native module compilation)
-- **EV code-signing certificate** (private key stored securely, not in repository)
-- **SignTool** (included with Windows SDK)
+- **Visual Studio Build Tools 2019+** (for native module compilation)
+- **EV code-signing certificate** (for signing — optional for local builds)
 
-### For Linux Builds
+---
 
-- **Ubuntu 18.04+**, **Fedora 30+**, or equivalent
-- **Build tools**: `build-essential`, `libx11-dev`, `libxkbfile-dev` (for `keytar` native module)
-- **AppImage runtime**: appimage-builder or similar
-
-## Local Development Setup
+## Local Development
 
 ### Clone and Install
 
 ```bash
 git clone https://github.com/your-org/claude-config-studio.git
 cd claude-config-studio
-npm install
+npm ci --ignore-scripts          # skip native postinstall scripts
+npx electron-rebuild -f -w keytar  # rebuild keytar for the Electron version
 ```
 
 ### Run in Development Mode
@@ -66,464 +88,398 @@ npm install
 npm run dev
 ```
 
-This launches the Electron app with hot-reloading for renderer process changes.
+> **VS Code users**: VS Code sets `ELECTRON_RUN_AS_NODE=1` in its terminal. The `dev` script handles this automatically via `env -u ELECTRON_RUN_AS_NODE`. If you launch from outside VS Code, no special handling is needed.
 
-### Build the Application (Local)
-
-```bash
-npm run build
-```
-
-This compiles TypeScript and bundles assets into the `dist/` directory.
-
-### Preview the Built App
-
-```bash
-npm run preview
-```
-
-Runs the app without Electron, useful for testing the bundled code.
-
-## Packaging for Release
-
-### Step 1: Build
+### Build (TypeScript + Vite)
 
 ```bash
 npm run build
 ```
 
-Verifies:
-- TypeScript compiles without errors
-- All assets are bundled
-- No missing dependencies
+Outputs compiled assets to `dist/main/`, `dist/preload/`, and `dist/renderer/`.
 
-### Step 2: Package Installers
+### Type-check
 
 ```bash
-npm run package
+npm run typecheck
 ```
 
-This command:
-1. Runs `npm run build` (if not already done)
-2. Invokes `electron-builder` to create installers for all three platforms (if running on each platform)
-3. Outputs artifacts to `dist/` folder
-
-**Note:** To build for a specific platform, set the environment variable:
+### Unit Tests
 
 ```bash
-# Windows only
-npx electron-builder --win
-
-# macOS only
-npx electron-builder --mac
-
-# Linux only
-npx electron-builder --linux
+npm run test:unit
+npm run test:unit -- --coverage   # with coverage report (≥80% threshold enforced)
 ```
 
-### Step 3: Verify Artifacts
-
-Check that all expected files were created:
+### Integration Tests (headless)
 
 ```bash
-ls -lh dist/
+# Requires Xvfb on Linux
+xvfb-run --auto-servernum npm run test:integration
 ```
 
-Expected output (varies by platform):
+---
+
+## Packaging
+
+### Build for the Current Platform
+
+```bash
+npm run build
+npx electron-builder
+```
+
+Outputs installers to `release/`.
+
+### Build for a Specific Platform
+
+```bash
+npx electron-builder --linux    # AppImage + deb + rpm + snap
+npx electron-builder --win      # exe (NSIS) + msi
+npx electron-builder --mac      # dmg + zip
+```
+
+### Expected Artifacts
+
+After `npx electron-builder --linux`:
 
 ```
-# Windows
-claude-config-studio-0.1.0.exe           (NSIS installer)
-claude-config-studio-0.1.0.exe.blockmap  (Delta updates)
-
-# macOS
-claude-config-studio-0.1.0.dmg           (DMG image)
-claude-config-studio-0.1.0.dmg.blockmap
-
-# Linux
-claude-config-studio-0.1.0.AppImage      (AppImage bundle)
-claude-config-studio-0.1.0.AppImage.sha256
-claude-config-studio_0.1.0_amd64.deb     (Debian package)
+release/
+  Claude Config Studio-0.1.0.AppImage          # portable, no install
+  claude-config-studio_0.1.0_amd64.deb         # Debian/Ubuntu
+  claude-config-studio-0.1.0.x86_64.rpm        # Fedora/RHEL
+  claude-config-studio_0.1.0_amd64.snap        # Snap
+  linux-unpacked/                               # unpacked directory
 ```
+
+After `npx electron-builder --win` (from Windows):
+
+```
+release/
+  Claude Config Studio Setup 0.1.0.exe         # NSIS installer
+  Claude Config Studio Setup 0.1.0.exe.blockmap
+  claude-config-studio-0.1.0-win.msi           # MSI
+  win-unpacked/
+```
+
+After `npx electron-builder --mac` (from macOS):
+
+```
+release/
+  Claude Config Studio-0.1.0.dmg
+  Claude Config Studio-0.1.0.dmg.blockmap
+  Claude Config Studio-0.1.0-mac.zip           # auto-update zip
+  mac/
+```
+
+### Quick Smoke Test (Linux)
+
+After building the AppImage, verify it launches:
+
+```bash
+# Install runtime dependencies (once)
+sudo apt-get install -y libfuse2 fuse libsecret-1-0
+
+# Launch
+env -u ELECTRON_RUN_AS_NODE DISPLAY=:0 \
+  "./release/Claude Config Studio-0.1.0.AppImage" --no-sandbox
+```
+
+Expected log output (in `~/.config/Claude Config Studio/logs/main.log`):
+
+```json
+{ "component": "main", "op": "ready" }
+{ "component": "project-handlers", "op": "scan", "folderCount": N }
+```
+
+---
 
 ## Code Signing
 
 ### macOS
 
-#### Prerequisites
+Signing is controlled by these environment variables (set in CI secrets):
 
-1. Enroll in [Apple Developer Program](https://developer.apple.com/programs/) ($99/year)
-2. Create a **Developer ID Application** certificate:
-   - Log in to [Apple Developer](https://developer.apple.com/account/)
-   - Go to **Certificates, Identifiers & Profiles**
-   - Click **+** to create a new certificate
-   - Select **Developer ID Application**
-   - Upload a Certificate Signing Request (CSR) from Keychain Access
-   - Download the certificate and import to Keychain
+| Variable | Description |
+|---|---|
+| `CSC_LINK` | Base64-encoded `.p12` certificate file |
+| `CSC_KEY_PASSWORD` | Certificate password |
+| `APPLE_ID` | Apple Developer account email |
+| `APPLE_TEAM_ID` | 10-character team ID |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password from appleid.apple.com |
 
-#### Signing Configuration
+Entitlements are defined in `build/entitlements.mac.plist`. They allow:
+- JIT compilation (required by Electron/Node)
+- User-selected file access
+- Network client (Claude API)
+- Keychain access group
 
-In `electron-builder.yml`:
+**Notarization** is disabled by default (`notarize: false` in `electron-builder.yml`). To enable for production releases, set `notarize: true` and ensure the Apple credentials are in CI secrets.
 
-```yaml
-mac:
-  certificateFile: /path/to/cert.p12
-  certificatePassword: ${CERTIFICATE_PASSWORD}  # Injected via CI secret
-  identity: "Developer ID Application: Your Name (ABC123XYZ)"
-  notarize:
-    teamId: ${APPLE_TEAM_ID}
-    appleId: ${APPLE_ID}
-    appleIdPassword: ${APPLE_ID_PASSWORD}  # App-specific password
-```
-
-#### Build and Notarize
-
-```bash
-npm run package
-```
-
-The build process will:
-1. Sign the binary with your Developer ID certificate
-2. Submit to Apple for notarization
-3. Staple the notarization ticket to the DMG
-4. This takes 5–15 minutes
-
-**Notarization Status:**
-
-Check notarization progress:
-
-```bash
-xcrun notarytool info <submission-id> \
-  --apple-id your-email@example.com \
-  --team-id ABC123XYZ
-```
-
-#### Verification
-
-After download, users can verify the signature:
+To verify a signed app after download:
 
 ```bash
 spctl -a -v -t install /Applications/Claude\ Config\ Studio.app
-# Output: "accepted" means the app is properly notarized
+# Output: accepted → properly notarized
 ```
 
 ### Windows
 
-#### Prerequisites
+| Variable | Description |
+|---|---|
+| `WIN_CSC_LINK` | Base64-encoded `.pfx` EV certificate |
+| `WIN_CSC_KEY_PASSWORD` | Certificate password |
 
-1. Obtain an **EV (Extended Validation) code-signing certificate** from a CA (e.g., DigiCert, Sectigo)
-2. Import the certificate to the Windows certificate store
-3. Keep the private key secure (consider a hardware token or Azure Key Vault)
-
-#### Signing Configuration
-
-In `electron-builder.yml`:
-
-```yaml
-win:
-  signingHashAlgorithms:
-    - sha256  # SHA-1 is deprecated; use SHA-256
-  certificateFile: ${CERTIFICATE_FILE}  # Path to .pfx file (injected in CI)
-  certificatePassword: ${CERTIFICATE_PASSWORD}  # Injected via CI secret
-  signtoolPath: "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.19041.0\\x64\\signtool.exe"
-```
-
-#### Build and Sign
-
-```bash
-npm run package
-```
-
-The build process will:
-1. Sign the unpacked `.exe` file
-2. Sign the NSIS installer `.exe`
-
-**Manual Signing (if needed):**
-
-```bash
-signtool sign /f cert.pfx /p password /fd sha256 /tr http://timestamp.sectigo.com /td sha256 "dist/claude-config-studio-0.1.0.exe"
-```
-
-#### Verification
-
-Users can verify the signature in PowerShell:
+Both the NSIS installer and the unpacked `.exe` are signed. Verify in PowerShell:
 
 ```powershell
-Get-AuthenticodeSignature "C:\Program Files\Claude Config Studio\claude-config-studio.exe"
-# Output: Status = Valid, SignerCertificate shows your org name
+Get-AuthenticodeSignature "Claude Config Studio Setup 0.1.0.exe"
+# Status = Valid
 ```
 
 ### Linux
 
-Linux AppImage and deb packages do not require code signing, but you can optionally verify package integrity:
+No code signing required. Verify package integrity via checksum:
 
 ```bash
-# Verify .deb package
-ar x claude-config-studio_0.1.0_amd64.deb
-# Extracts control.tar.gz, data.tar.gz, debian-binary
-
-# Verify AppImage checksum
-sha256sum -c claude-config-studio-0.1.0.AppImage.sha256
+sha256sum -c "Claude Config Studio-0.1.0.AppImage.sha256"
 ```
 
-## SBOM Generation
+---
 
-Generate a CycloneDX Software Bill of Materials for each release artifact:
+## Auto-Update
 
-### Prerequisites
+Claude Config Studio uses **electron-updater** to check GitHub Releases on every launch (only when the app is packaged — never in development).
 
-```bash
-npm install -g @cyclonedx/npm
+### How It Works
+
+1. On `app.whenReady()`, the main process calls `autoUpdater.checkForUpdatesAndNotify()`
+2. If a new GitHub Release is found, the renderer receives `updater:update-available` via IPC
+3. The update downloads in the background; when complete, the renderer receives `updater:update-downloaded`
+4. The user can trigger install via `updater:install` IPC channel (calls `quitAndInstall()`)
+5. Failed update checks (e.g. no internet, repo not public yet) are logged as `WARN` and do not crash the app
+
+### Publish Configuration
+
+Configured in `electron-builder.yml`:
+
+```yaml
+publish:
+  provider: github
+  owner: your-org
+  repo: claude-config-studio
+  releaseType: release
 ```
 
-### Generate SBOM
+---
 
-```bash
-cyclonedx-npm --output-file dist/claude-config-studio-0.1.0-bom.json --package-lock-only
-```
+## CI/CD
 
-This creates a JSON file listing:
-- All npm dependencies and versions
-- License information
-- Known vulnerabilities (if scanned against NVD)
+### Workflows
 
-### Attach to Release
+Two GitHub Actions workflows are included in `.github/workflows/`:
 
-Include the SBOM with each GitHub Release artifact so consumers can track dependencies.
+#### `ci.yml` — Continuous Integration
 
-## CI/CD Pipeline
+Triggers on every push to `develop`, `feat/**`, `fix/**` branches and pull requests.
 
-### GitHub Actions Workflow
+Steps:
+1. Install system dependencies (libsecret, xvfb)
+2. `npm ci --ignore-scripts`
+3. `npx electron-rebuild -f -w keytar`
+4. `npm run typecheck`
+5. `npm run test:unit -- --coverage`
+6. `npm run build`
+7. `xvfb-run npm run test:integration` (headless Playwright/Electron)
 
-The recommended CI/CD setup uses GitHub Actions to build, sign, and release on all three platforms:
+#### `release.yml` — Release Build + Publish
 
-1. **Trigger**: Push to `release/*` branch or manual dispatch
-2. **Matrix build**: Build for Windows, macOS, and Linux in parallel
-3. **Code signing**: Sign artifacts with platform-specific credentials (via secrets)
-4. **SBOM generation**: Generate CycloneDX manifest
-5. **GitHub Release**: Attach all artifacts and documentation
-6. **Notifications**: Slack/email notification on success or failure
+Triggers on push of a `v*.*.*` tag.
 
-### Secrets Management
+Matrix: `ubuntu-latest` / `windows-latest` / `macos-latest` — all three run in parallel.
 
-Store the following in **GitHub Settings > Secrets**:
+Steps per platform:
+1. Install system dependencies
+2. `npm ci --ignore-scripts`
+3. `npx electron-rebuild -f -w keytar`
+4. `npm run build`
+5. `npm run test:unit`
+6. `npx electron-builder --<platform> --publish always`
 
-- `APPLE_ID`: Apple Developer account email
-- `APPLE_ID_PASSWORD`: App-specific password from Apple ID settings
-- `APPLE_TEAM_ID`: Apple Developer team ID (10 chars)
-- `CERTIFICATE_FILE`: Base64-encoded `.p12` (macOS) or `.pfx` (Windows) file
-- `CERTIFICATE_PASSWORD`: Certificate password
-- `WINDOWS_SIGN_CERTIFICATE`: EV code-signing certificate (Windows)
+Artifacts uploaded to GitHub Release automatically via `GH_TOKEN`.
+
+### Required GitHub Secrets
+
+Add these in **GitHub Settings → Secrets and variables → Actions**:
+
+| Secret | Used by | Description |
+|---|---|---|
+| `MAC_CSC_LINK` | macOS build | Base64 `.p12` Developer ID certificate |
+| `MAC_CSC_KEY_PASSWORD` | macOS build | Certificate password |
+| `APPLE_ID` | macOS build | Apple account email |
+| `APPLE_TEAM_ID` | macOS build | 10-char team ID |
+| `APPLE_APP_SPECIFIC_PASSWORD` | macOS build | App-specific password |
+| `WIN_CSC_LINK` | Windows build | Base64 `.pfx` EV certificate |
+| `WIN_CSC_KEY_PASSWORD` | Windows build | Certificate password |
+
+`GITHUB_TOKEN` is provided automatically by GitHub Actions — no manual secret needed.
+
+---
 
 ## Release Process
 
-### Prerequisites
+### 1. Prepare
 
-- All tests pass (unit + integration)
-- Code review completed
-- Version number bumped in `package.json`
-- Changelog updated
-
-### Steps
-
-#### 1. Create Release Branch
+Ensure tests pass and version is bumped:
 
 ```bash
-git checkout -b release/v0.1.0
+git checkout develop
+npm run test:unit && npm run test:integration
+# Edit package.json version: "0.2.0"
+git add package.json
+git commit -m "chore(release): bump version to 0.2.0"
 ```
 
-#### 2. Update Version and Changelog
+### 2. Create Release Branch
 
-Edit `package.json`:
-
-```json
-{
-  "version": "0.1.0"
-}
+```bash
+git checkout -b release/v0.2.0
 ```
 
-Edit `CHANGELOG.md`:
+### 3. Update CHANGELOG
 
 ```markdown
-## [0.1.0] - 2026-03-22
+## [0.2.0] - 2026-04-01
 
 ### Added
-- Initial release of Claude Config Studio
-- Skill graph visualization and editing
-- Dependency validation
-- Backup and restore functionality
-- MCP module management
+- Feature X
+- Feature Y
 
 ### Fixed
-- [#123] Circular dependency detection
-
-[0.1.0]: https://github.com/your-org/claude-config-studio/releases/tag/v0.1.0
+- Bug Z
 ```
 
-#### 3. Commit Changes
+Commit:
 
 ```bash
-git add package.json CHANGELOG.md
-git commit -m "chore(release): bump version to 0.1.0"
+git commit -m "chore(release): bump changelog for v0.2.0"
 ```
 
-#### 4. Build and Test
-
-```bash
-npm ci
-npm run test
-npm run build
-npm run package
-```
-
-#### 5. Create Git Tag
-
-```bash
-git tag -a v0.1.0 -m "Release v0.1.0" -s
-```
-
-(The `-s` flag signs the tag; requires GPG setup.)
-
-#### 6. Push and Create Release
-
-```bash
-git push origin release/v0.1.0
-git push origin v0.1.0
-```
-
-Then, go to **GitHub** > **Releases** > **Draft new release**:
-
-1. Select tag `v0.1.0`
-2. Add release notes (copy from CHANGELOG)
-3. Upload artifacts:
-   - `dist/claude-config-studio-0.1.0.exe` (Windows)
-   - `dist/claude-config-studio-0.1.0.dmg` (macOS)
-   - `dist/claude-config-studio-0.1.0.AppImage` (Linux)
-   - `dist/claude-config-studio-0.1.0-bom.json` (SBOM)
-   - `dist/claude-config-studio_0.1.0_amd64.deb` (Linux deb)
-4. Publish release
-
-#### 7. Merge Back to Main and Develop
+### 4. Merge to Main and Tag
 
 ```bash
 git checkout main
-git merge --no-ff release/v0.1.0 --message "Merge release v0.1.0 into main"
-git push origin main
-
-git checkout develop
-git merge --no-ff release/v0.1.0 --message "Merge release v0.1.0 back to develop"
-git push origin develop
-
-git branch -d release/v0.1.0
-git push origin :release/v0.1.0
+git merge --no-ff release/v0.2.0
+git tag -a v0.2.0 -s -m "Release v0.2.0"
+git push origin main v0.2.0
 ```
 
-## Distribution
+The `v0.2.0` tag push triggers `release.yml` — GitHub Actions builds all three platforms and publishes installers to GitHub Releases automatically.
 
-### Direct Download
+### 5. Merge Back to Develop
 
-Users can download installers from the GitHub Releases page.
+```bash
+git checkout develop
+git merge --no-ff release/v0.2.0
+git push origin develop
+git branch -d release/v0.2.0
+git push origin :release/v0.2.0
+```
 
-### Auto-Update
+---
 
-Claude Config Studio includes built-in update checking:
+## Build Assets
 
-1. On startup, the app queries GitHub API for the latest release
-2. If a new version is available, a notification is shown
-3. Users can click **Update** to download and install the latest version
-4. The update is installed in the background with a restart prompt
+The `build/` directory contains assets required by electron-builder:
 
-### Future: Package Managers
+| File | Used by | Description |
+|---|---|---|
+| `build/icon.png` | Linux | 512×512 app icon |
+| `build/icon.ico` | Windows | Multi-size ICO (16–256 px) |
+| `build/icon.icns` | macOS | ICNS icon |
+| `build/dmg-background.png` | macOS | 540×380 DMG window background |
+| `build/entitlements.mac.plist` | macOS | Hardened runtime entitlements |
+| `build/linux/after-install.sh` | Linux deb | Post-install hook (updates desktop DB) |
+| `build/linux/after-remove.sh` | Linux deb | Post-remove hook |
 
-To distribute via package managers:
-
-- **Windows**: Microsoft Store (requires additional signing)
-- **macOS**: Mac App Store or Homebrew (`brew install claude-config-studio`)
-- **Linux**: Snap Store (`snap install claude-config-studio`) or Flatpak
+---
 
 ## Troubleshooting
 
-### Build Fails: Missing Native Dependencies
+### `keytar` fails to build (`gyp ERR!`)
 
-**Error**: `gyp ERR! build error` when building `keytar` or `proper-lockfile`
+```bash
+# macOS
+xcode-select --install
 
-**Solution**:
-- **macOS**: `xcode-select --install` to install Xcode command-line tools
-- **Windows**: Install Visual Studio Build Tools 2019
-- **Linux**: `sudo apt-get install build-essential python3`
+# Windows
+npm install --global windows-build-tools
 
-### Code Signing Fails
+# Linux
+sudo apt-get install -y build-essential python3 libsecret-1-dev
+```
 
-**Error**: `Certificate not found` or `Invalid certificate password`
+Then rebuild:
 
-**Solution**:
-- Verify the certificate file path is correct
-- Check that the certificate password is correct (no typos)
-- Ensure the certificate is imported into the OS keychain:
-  - macOS: **Keychain Access** > **My Certificates**
-  - Windows: **Certmgr.msc** > **Personal** > **Certificates**
+```bash
+npx electron-rebuild -f -w keytar
+```
 
-### Notarization Fails (macOS)
+### App exits immediately: `initializeFn is not a function`
 
-**Error**: `Notarization failed: The uploaded file is not a valid app package`
+This occurs if the main process imports `electron-log` instead of `electron-log/main`.
+`src/main/index.ts` must use:
 
-**Solution**:
-1. Verify that all dependencies are bundled: `ditto -x dist/claude-config-studio-0.1.0.dmg /tmp/check && ls -la /tmp/check`
-2. Check that the app is built for the target macOS version
-3. Ensure no unsigned dependencies are bundled
-4. Try submitting again; Apple's servers sometimes have temporary issues
+```ts
+import log from 'electron-log/main'
+```
 
-### EV Certificate Revoked
+### App exits immediately: `electron.app is undefined`
 
-**Error**: `SignTool: Unable to sign the file`
+Caused by `ELECTRON_RUN_AS_NODE=1` in the environment (set by VS Code). The `dev` and `start` npm scripts already handle this with `env -u ELECTRON_RUN_AS_NODE`. If launching the binary directly:
 
-**Solution**:
-1. Check that the certificate has not expired or been revoked
-2. Verify on the CA's revocation list
-3. If revoked, request a new EV certificate from the CA
-4. Update the certificate in CI secrets
+```bash
+env -u ELECTRON_RUN_AS_NODE ./release/Claude\ Config\ Studio-0.1.0.AppImage
+```
 
-## Performance & Optimization
+### AppImage won't run: `AppImages require FUSE`
 
-### Build Time
+```bash
+sudo apt-get install -y libfuse2 fuse
+```
 
-- **First build**: 2–5 minutes (depends on system specs and network)
-- **Incremental build**: 30–60 seconds
-- **Full release build (all platforms)**: 10–20 minutes
+### Auto-update check fails (404)
 
-### Artifact Size
+Expected when the GitHub repository doesn't exist or is private. The error is logged as `WARN` and the app continues normally. No action needed until a real GitHub Releases page exists.
 
-- **Windows installer**: 150–200 MB
-- **macOS DMG**: 180–250 MB
-- **Linux AppImage**: 140–180 MB
-- **Linux deb**: 120–160 MB
+### Code signing fails (macOS): `Certificate not found`
 
-### Optimization Tips
+1. Ensure `CSC_LINK` is base64-encoded: `base64 -i cert.p12 | pbcopy`
+2. Verify `CSC_KEY_PASSWORD` has no leading/trailing spaces
+3. Check the certificate is a **Developer ID Application** type (not Distribution)
 
-- Use `.dmgignore` to exclude unnecessary files from DMG
-- Enable compression in `electron-builder.yml`: `compression: maximum`
-- Remove test files and source maps from distribution build
+---
+
+## Performance & Size
+
+- **Measured AppImage size**: 106 MB (Electron 33 + Node 20 runtime included)
+- **Build time (Linux, CI)**: ~3 minutes (including electron download + keytar rebuild)
+- **Build time (all platforms, parallel CI)**: ~5–8 minutes wall clock
+
+---
 
 ## Security Checklist
 
 Before each release:
 
-- [ ] Run security audit: `npm audit --production`
-- [ ] Run static analysis: `npm run lint`
-- [ ] Verify no secrets in artifacts: `npm run build && grep -r "password\|key\|token" dist/`
-- [ ] Code review completed
-- [ ] Signing certificate is valid and not expired
-- [ ] CI/CD logs do not expose credentials
-- [ ] SBOM is generated and included in release
-- [ ] All artifacts are signed (Windows, macOS)
-- [ ] Notarization ticket is stapled to macOS app
-- [ ] GitHub Release notes explain changes and any breaking changes
-
-## Documentation
-
-- **User Guide**: `/docs/user-guide.md` — for end users
-- **Architecture**: `/docs/architecture/` — for developers
-- **API Documentation**: Generated from OpenAPI spec (if applicable)
+- [ ] `npm audit --omit=dev` — no HIGH/CRITICAL in production deps
+- [ ] `npm run typecheck` — zero TypeScript errors
+- [ ] `npm run test:unit -- --coverage` — ≥80% coverage, all pass
+- [ ] `npm run test:integration` — Playwright test passes
+- [ ] No secrets in source: `grep -r "sk-ant\|password\|token" src/`
+- [ ] All artifacts signed (macOS: notarized; Windows: EV cert)
+- [ ] CI logs do not expose certificate passwords or API keys
+- [ ] `electron-builder.yml` `publish.releaseType` is `release` (not `draft`)
 
 ---
 
