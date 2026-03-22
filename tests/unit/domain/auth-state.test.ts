@@ -12,7 +12,7 @@ describe('AuthState', () => {
     })
 
     it('returns false when validated recently', () => {
-      const state = createValidAuthState()
+      const state = createValidAuthState('api-key')
       expect(isExpired(state)).toBe(false)
     })
 
@@ -21,6 +21,7 @@ describe('AuthState', () => {
         isValid: true,
         keyPresent: true,
         lastValidatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        authMethod: 'api-key' as const,
       }
       expect(isExpired(state)).toBe(true)
     })
@@ -28,10 +29,11 @@ describe('AuthState', () => {
 
   describe('createValidAuthState', () => {
     it('creates a valid state', () => {
-      const state = createValidAuthState()
+      const state = createValidAuthState('api-key')
       expect(state.isValid).toBe(true)
       expect(state.keyPresent).toBe(true)
       expect(state.lastValidatedAt).toBeInstanceOf(Date)
+      expect(state.authMethod).toBe('api-key')
     })
   })
 
