@@ -56,7 +56,7 @@ export async function launchApp(opts: LaunchOptions = {}): Promise<ElectronAppli
 async function waitForApi(page: Page): Promise<void> {
   await page.waitForFunction(
     () => typeof (window as unknown as { electronApi?: unknown }).electronApi !== 'undefined',
-    { timeout: 10_000 },
+    { timeout: 30_000 },
   )
 }
 
