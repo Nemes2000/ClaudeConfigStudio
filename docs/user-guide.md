@@ -119,16 +119,27 @@ Open Claude Config Studio from your applications menu, Start Menu, or by running
 
 ### 2. Onboarding Wizard
 
-On first launch (or when no API key is stored), the **Onboarding Wizard** appears:
+On first launch (or when no credentials are stored), the **Onboarding Wizard** appears with two authentication options:
 
-1. **Enter your Anthropic API key**
+**Option A — Sign in with Claude account (recommended)**
+
+1. Click **Sign in with Claude account**
+2. Your default browser opens to `claude.ai` for authentication
+3. Sign in (or create an account) and authorize Claude Config Studio
+4. The browser redirects back and the app receives the session token automatically
+5. Your session token is stored in the **OS keychain** — never written to disk in plaintext
+
+**Option B — Anthropic API key**
+
+1. Enter your API key (`sk-ant-...`) in the text field
    - Get one from [Anthropic Console](https://console.anthropic.com/api_keys)
    - The key is stored securely in your **OS keychain** — never written to disk in plaintext
    - The key is validated against the Anthropic API before being saved
 
-2. **Workspace scan** runs automatically — the app discovers all `.claude/` folders in your home directory and active projects
+After either option succeeds:
 
-3. The main dashboard opens once the scan completes
+- **Workspace scan** runs automatically — the app discovers all `.claude/` folders in your home directory and active projects
+- The main dashboard opens once the scan completes
 
 ### 3. Main Dashboard
 
@@ -417,13 +428,15 @@ When you edit a skill that is depended on by an orchestrator, the **Orchestrator
 
 Click the **⚙** icon (top-right) to open Settings.
 
-#### API Key
+#### Authentication
 
 | Setting | Description |
 |---|---|
-| Current status | Valid / Invalid / Not set |
-| Update key | Replace stored API key |
-| Test connection | Re-validate against Anthropic API |
+| Current status | Valid / Invalid / Not set; shows auth method (Claude account or API key) |
+| Sign in with Claude account | Opens browser OAuth flow to authenticate with your claude.ai account |
+| Update API key | Replace stored Anthropic API key |
+| Test connection | Re-validate the active credential against the Anthropic API |
+| Sign out | Clears the stored session token or API key from the OS keychain |
 
 #### Workspace
 
@@ -460,14 +473,24 @@ Click the **⚙** icon (top-right) to open Settings.
 
 ## Security Notes
 
-### API Key Storage
+### Credential Storage
 
-Your Anthropic API key is **never written to disk in plaintext**.
+Your credentials are **never written to disk in plaintext**.
 
-- It is stored in the **OS keychain** (macOS Keychain, Windows Credential Manager, Linux libsecret)
-- It is read from the keychain at startup and held in memory only
-- It is never logged, never sent to third parties, never included in backups
-- If you clear your OS keychain, re-enter the key in Settings → API Key
+- Both the Anthropic API key and Claude account session token are stored in the **OS keychain** (macOS Keychain, Windows Credential Manager, Linux libsecret)
+- Credentials are read from the keychain at startup and held in memory only
+- They are never logged, never sent to third parties, never included in backups
+- If you clear your OS keychain, re-authenticate via **Settings → Authentication**
+
+### Claude Account OAuth
+
+The Claude account sign-in uses the **OAuth 2.0 PKCE** flow:
+
+- No client secret is embedded in the app
+- The authorization code and code verifier never leave your machine unencrypted
+- A temporary local HTTP server (`127.0.0.1` only) receives the browser callback — it is never accessible from the network
+- The server shuts down immediately after receiving the callback (or after a 5-minute timeout)
+- Only the resulting session token is stored in the OS keychain
 
 ### Path Safety
 
@@ -528,8 +551,27 @@ To check your current version: **Settings → About → Version**.
 1. Go to [Anthropic Console](https://console.anthropic.com/api_keys)
 2. Check the key hasn't been revoked or expired
 3. Generate a new key if needed
-4. Update in **Settings → API Key → Update key**
+4. Update in **Settings → Authentication → Update API key**
 5. Click **Test connection** to verify
+
+### "Sign in with Claude account" Fails or Times Out
+
+**Browser does not open:**
+1. Check your default browser is set correctly in OS settings
+2. Try again — if it still fails, check the log file for `component: claude-oauth-server` errors
+
+**"Authentication complete" page shows but app stays signed out:**
+1. The browser callback may have been blocked by a firewall or security tool
+2. Disable any browser extension that blocks localhost redirects, then retry
+3. Check the log for `OAuth state mismatch` — if seen, the request may have been tampered with; retry
+
+**Sign-in times out (5 minutes):**
+1. The browser window may have been closed before completing sign-in
+2. Click **Sign in with Claude account** again to start a fresh flow
+
+**Signed in but AI features are unavailable:**
+1. Your Claude.ai account may not have API access enabled
+2. Check your plan at [claude.ai](https://claude.ai) — API features require a paid plan
 
 ### Projects Not Appearing in Sidebar
 
@@ -637,7 +679,8 @@ This is expected if the GitHub repository is private or the Releases page hasn't
 
 - Rotate your API key monthly
 - Never commit `.claude/` config files that could somehow contain key material (they don't — the key is in the keychain)
-- If the key is compromised: revoke immediately in Anthropic Console, then update in Settings
+- If the key is compromised: revoke immediately in Anthropic Console, then update in **Settings → Authentication → Update API key**
+- Prefer **Sign in with Claude account** for personal use — the OAuth session is scoped and can be revoked from your claude.ai account page without affecting other tools
 
 ### Git Integration
 

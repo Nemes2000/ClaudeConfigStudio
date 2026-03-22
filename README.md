@@ -12,7 +12,7 @@ Desktop application for managing Claude Code `.claude/` configuration folders ac
 - **Backup & Restore** — Automatic snapshots with one-click rollback to any previous version
 - **MCP Integration** — Browse, install, and manage Model Control Protocol modules
 - **Git Integration** — Automatic version control of configuration changes with commit tracking
-- **Secure API Key Storage** — API keys stored in OS keychain, never in plaintext files
+- **Dual Authentication** — Sign in with your Claude account (OAuth PKCE) or an Anthropic API key; credentials stored in OS keychain, never in plaintext files
 - **Cross-Platform** — Windows, macOS, and Linux support
 
 ## Screenshot
@@ -35,8 +35,8 @@ Desktop application for managing Claude Code `.claude/` configuration folders ac
 
 ### First Launch
 
-1. Enter your [Anthropic API key](https://console.anthropic.com/api_keys)
-2. The app scans your workspace for `.claude/` folders
+1. **Authenticate** — click **Sign in with Claude account** (opens browser) or enter an [Anthropic API key](https://console.anthropic.com/api_keys)
+2. The app scans your workspace for `.claude/` folders automatically
 3. Select projects to manage
 4. Start editing your configuration
 

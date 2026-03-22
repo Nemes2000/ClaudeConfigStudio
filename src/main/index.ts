@@ -10,6 +10,8 @@ import { registerBackupHandlers } from './ipc/backup-handlers'
 import { registerSuggestionHandlers } from './ipc/suggestion-handlers'
 import { registerMcpHandlers } from './ipc/mcp-handlers'
 import { validateApiKey } from './application/commands/validate-api-key-use-case'
+import { getClaudeAccountSession } from './application/commands/sign-in-with-claude-use-case'
+import { createValidAuthState } from './domain/models/auth-state'
 import { IPC_CHANNELS } from '../shared/ipc-channels'
 
 log.initialize()
@@ -72,16 +74,22 @@ app.whenReady().then(async () => {
 
   // Run auth validation at startup
   try {
-    const result = await validateApiKey({
-      keychainService: services.keychainService,
-      anthropicClient: services.anthropicClient,
-    })
+    const sessionToken = await getClaudeAccountSession({ keychainService: services.keychainService })
+    const startupAuthResult = sessionToken
+      ? {
+          authState: createValidAuthState('claude-account'),
+          reason: 'startup' as const,
+        }
+      : await validateApiKey({
+          keychainService: services.keychainService,
+          anthropicClient: services.anthropicClient,
+        })
 
     mainWindow.webContents.on('did-finish-load', () => {
       mainWindow?.webContents.send(IPC_CHANNELS.AUTH_STATE_CHANGED, {
-        ...result.authState,
-        lastValidatedAt: result.authState.lastValidatedAt?.toISOString() ?? null,
-        reason: result.reason,
+        ...startupAuthResult.authState,
+        lastValidatedAt: startupAuthResult.authState.lastValidatedAt?.toISOString() ?? null,
+        reason: startupAuthResult.reason,
       })
     })
   } catch (err) {
