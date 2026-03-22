@@ -1,5 +1,6 @@
 import { SimpleGitService } from '@main/infrastructure/git/simple-git-service'
 import * as electronLog from 'electron-log'
+import * as path from 'path'
 
 jest.mock('simple-git')
 jest.mock('electron-log')
@@ -61,14 +62,14 @@ describe('SimpleGitService', () => {
       await service.installPreCommitHook('/repo/path')
 
       expect(fs.writeFile).toHaveBeenCalledWith(
-        '/repo/path/.git/hooks/pre-commit',
+        path.normalize('/repo/path/.git/hooks/pre-commit'),
         expect.stringContaining('Claude Config Studio'),
         expect.objectContaining({
           encoding: 'utf-8',
           mode: 0o755,
         }),
       )
-      expect(fs.chmod).toHaveBeenCalledWith('/repo/path/.git/hooks/pre-commit', 0o755)
+      expect(fs.chmod).toHaveBeenCalledWith(path.normalize('/repo/path/.git/hooks/pre-commit'), 0o755)
       expect(electronLog.info).toHaveBeenCalledWith(
         expect.objectContaining({
           component: 'simple-git-service',

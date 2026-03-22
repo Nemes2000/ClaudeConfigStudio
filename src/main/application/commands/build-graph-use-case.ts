@@ -21,7 +21,10 @@ export function buildGraph(fileEntries: FileEntry[]): DependencyGraph {
   const reverseEdges = new Map<string, Set<string>>()
 
   for (const entry of fileEntries) {
-    if (!entry.exists || !entry.absolutePath.includes(`${path.sep}skills${path.sep}`)) {
+    // Normalize to forward slashes so the check works regardless of platform
+    // separator (paths from tests use '/' while Windows filesystem uses '\').
+    const normalizedAbs = entry.absolutePath.replace(/\\/g, '/')
+    if (!entry.exists || !normalizedAbs.includes('/skills/')) {
       continue
     }
     const node = parseSkillNode(entry)
@@ -82,7 +85,8 @@ function parseSkillNode(entry: FileEntry): SkillNode {
 
 function extractSlugFromPath(filePath: string): string {
   // skills/<slug>/SKILL.md → slug is the directory name
-  const parts = filePath.split(path.sep)
+  // Normalize separators so this works on both Windows (\) and POSIX (/).
+  const parts = filePath.replace(/\\/g, '/').split('/')
   const skillIdx = parts.lastIndexOf('skills')
   if (skillIdx >= 0 && skillIdx + 1 < parts.length) {
     return parts[skillIdx + 1] ?? path.basename(path.dirname(filePath))
