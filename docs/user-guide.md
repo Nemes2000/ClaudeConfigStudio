@@ -190,6 +190,84 @@ The skill is automatically:
 
 Use the toggle switch next to each skill to enable or disable it. The `enabled` frontmatter key in the skill file is updated automatically. Disabled skills appear gray in the graph.
 
+#### Validating a Skill
+
+Claude Config Studio checks each skill file for required structure before saving:
+
+- **Purpose section** — the skill must have a `## Purpose` heading
+- **Instructions section** — the skill must have an `## Instructions` heading
+- **Valid YAML frontmatter** — `slug`, `name`, `description`, and `version` fields must be present
+
+If validation fails, the editor shows which sections are missing or malformed. Fix the issues and save again. A skill with missing frontmatter appears with an **orange warning badge** in the graph view.
+
+---
+
+### Rule Management
+
+Rules live in `~/.claude/rules/` (global) and optionally in `.claude/rules/` inside a project (supplement). A **supplement rule** extends or overrides its global counterpart for a specific project.
+
+#### Creating a Rule
+
+1. Select a project in the left sidebar
+2. Open the **Rules** tab
+3. Click **+ New Rule**
+4. Enter a slug (kebab-case, e.g. `naming-conventions`) and a display name
+5. Optionally enter a `paths` glob to scope the rule to specific file types (e.g. `**/*.ts`)
+6. Click **Save**
+
+The rule file is written to `~/.claude/rules/<slug>.md` and is immediately active across all projects.
+
+#### Creating a Project-Level Supplement Rule
+
+A supplement rule lets you override or extend a global rule for one project without affecting others:
+
+1. Open the **Rules** tab for the target project
+2. Find the global rule you want to extend
+3. Click **Create Supplement** — a new file is created at `.claude/rules/<slug>.md` inside the project
+4. Edit the supplement content in the editor
+5. Click **Save**
+
+The supplement is applied on top of the global rule for that project only.
+
+#### Toggling Rules On/Off
+
+Use the toggle switch next to each rule in the Rules tab. Both global and supplement rules have independent toggles:
+
+- **Global toggle off** — rule is disabled everywhere
+- **Supplement toggle off** — supplement is ignored; the global rule still applies
+
+#### Deleting a Rule
+
+Right-click a rule → **Delete**. A backup is created first. Deleting a global rule removes it from all projects; deleting a supplement only affects that project.
+
+#### Rule Hierarchy View
+
+Each rule row shows its hierarchy status:
+
+| Indicator | Meaning |
+|---|---|
+| **Global only** | Rule exists in `~/.claude/rules/` with no project override |
+| **Global + Supplement** | Project-level supplement is active on top of the global rule |
+| **Supplement only** | Project has a supplement for a global rule that has been deleted |
+
+---
+
+### Hook Management
+
+Hooks are scripts that run automatically at specific points in Claude Code's lifecycle (e.g. before a commit, after a tool call). They live in `.claude/hooks/`.
+
+#### Toggling Hooks On/Off
+
+1. Open the **Hooks** tab for the selected project
+2. Use the toggle switch next to each hook to enable or disable it
+3. The `enabled` field in the hook's frontmatter is updated automatically
+
+Disabled hooks are skipped by Claude Code at runtime. They remain on disk and can be re-enabled at any time.
+
+> **Note:** Creating and editing hook scripts is done by editing the hook file directly (via **Files** tab or an external editor). The Hooks tab manages enable/disable state only.
+
+---
+
 ### Dependency Graph View
 
 The **Graph** tab renders all skills and their `@import` or dependency references as an interactive diagram:
@@ -223,6 +301,50 @@ Every write operation creates an automatic snapshot before modifying the file.
 2. A preview of the file content appears
 3. Click **Restore** — the current file is backed up first, then the snapshot is written
 
+### Project Creation
+
+To create a new `.claude/` folder in a directory that does not have one yet:
+
+1. Click **+ New Project** in the left sidebar
+2. Enter (or browse to) the **target path** — the directory where the `.claude/` folder will be created
+3. Choose a **template**:
+   - `blank` — empty `.claude/` structure with `skills/`, `rules/`, `hooks/`, `mcp/` subdirectories
+   - `minimal` — blank plus a sample skill and a starter `CLAUDE.md`
+4. Click **Create** — the folder and initial files are written atomically
+
+The new project appears in the sidebar immediately after creation.
+
+---
+
+### Section & Item Editing
+
+For markdown config files (skills, rules, CLAUDE.md), the editor supports granular section and list-item operations without overwriting the entire file. These operations are exposed in the **editor toolbar**:
+
+#### Section Operations
+
+| Action | Description |
+|---|---|
+| **Update section** | Replace the content under a named `## Heading` |
+| **Add section** | Insert a new `## Heading` and content block after an existing section |
+| **Delete section** | Remove a named `## Heading` and all its content |
+
+To use: place the cursor inside a section → select the action from the **Section** menu in the toolbar.
+
+#### List Item Operations
+
+Within any section that contains a markdown list, you can manipulate individual items:
+
+| Action | Description |
+|---|---|
+| **Add item** | Append or insert a list item at a specific index |
+| **Update item** | Replace the text of an item by its index |
+| **Delete item** | Remove an item by its index |
+| **Reorder item** | Move an item from one index to another (drag-and-drop or via menu) |
+
+All section and item edits are **atomic** — the full file is snapshotted before the change is written.
+
+---
+
 ### MCP Module Management
 
 #### Browse the Marketplace
@@ -243,6 +365,21 @@ Every write operation creates an automatic snapshot before modifying the file.
 - **Enable / Disable** — toggle switch next to each module
 - **Configure** — gear icon to edit settings (API keys, versions)
 - **Uninstall** — right-click → **Uninstall**
+
+#### Updating an MCP Auth Key
+
+If a module requires authentication and you need to rotate or replace the stored credential:
+
+1. Click the **gear icon** next to the installed module
+2. Click **Update Auth Key**
+3. Enter the new key — it is stored in the OS keychain immediately (not written to disk)
+4. Click **Save**
+
+The old key is replaced in the keychain. The change takes effect on the next time Claude Code invokes the module.
+
+#### Module Compatibility Check
+
+Before installing, the app checks whether the module's `minClaudeVersion` is compatible with your detected Claude installation. A **Compatible** or **Incompatible** badge appears on the module detail page. Installation is blocked if incompatible — upgrade Claude Code first.
 
 ### AI Suggestions Sidebar
 
@@ -418,6 +555,28 @@ sudo apt-get install -y libfuse2 fuse
 - Disable unused skills temporarily to reduce graph size
 - Restart the app if the renderer is unresponsive (Ctrl+R / Cmd+R)
 
+### Skill Validation Errors
+
+When saving a skill, the editor may show validation warnings:
+
+| Message | Fix |
+|---|---|
+| `Missing Purpose section` | Add a `## Purpose` heading with content |
+| `Missing Instructions section` | Add an `## Instructions` heading with content |
+| `Malformed frontmatter` | Ensure the YAML block at the top has `slug`, `name`, `description`, `version` fields |
+
+Skills with missing frontmatter still save but display an **orange warning badge** in the graph. Fix the structure to clear the badge.
+
+### Rule Supplement Not Applying
+
+If a project-level supplement rule appears to be ignored:
+
+1. Open the **Rules** tab for the project
+2. Check that the supplement toggle is **on**
+3. Verify the supplement slug matches the global rule slug exactly
+4. Check that the global rule toggle is also **on** (if the global rule is off, the supplement is irrelevant)
+5. Click **⟳ Rescan** if the rule was added outside the app
+
 ### Circular Dependency Warning
 
 1. Open the **Graph** tab — red edges indicate cycles
@@ -460,6 +619,19 @@ This is expected if the GitHub repository is private or the Releases page hasn't
 - Use dependencies to express relationships — not file includes
 - Group related skills in the same `.claude/skills/` folder
 - Archive (disable) unused skills instead of deleting them
+
+### Organizing Rules
+
+- Store language-agnostic rules globally (`~/.claude/rules/`) so they apply to all projects
+- Use project-level supplements for framework-specific overrides (e.g. a React-only naming rule)
+- Use the `paths` glob field to scope rules to specific file patterns — avoids noise in unrelated contexts
+- Delete supplements when a project is archived rather than leaving orphaned overrides
+
+### Managing Hooks
+
+- Name hook files with the event they handle: `pre-tool-use-lint.md`, `post-tool-use-log.md`
+- Disable hooks during debugging to isolate whether a hook is causing unexpected behaviour
+- Keep hooks idempotent — Claude Code may call the same hook multiple times
 
 ### API Key Hygiene
 
