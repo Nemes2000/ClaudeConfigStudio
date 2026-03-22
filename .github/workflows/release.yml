@@ -50,22 +50,21 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
-      - name: Install electron-rebuild
-        run: npm install --save-dev @electron/rebuild
-
-      - name: Rebuild native modules for Electron
-        run: npx electron-rebuild -f -w keytar
-
       - name: Build (compile TypeScript + Vite)
         run: npm run build
         env:
           ELECTRON_RUN_AS_NODE: ''
 
+      # Unit tests run before electron-rebuild so keytar.node is still
+      # compiled for Node.js ABI — electron-rebuild changes it to Electron ABI
       - name: Run unit tests
         run: npm run test:unit
 
-      # ── macOS: code sign + notarize ────────────────────────────────────────
-      - name: Package (macOS — signed + notarized)
+      - name: Rebuild native modules for Electron
+        run: npx electron-rebuild -f -w keytar
+
+      # ── macOS: code sign + notarize (signing skipped if cert secrets not set)
+      - name: Package (macOS)
         if: matrix.platform == 'mac'
         run: npx electron-builder --mac --publish always
         env:
@@ -75,8 +74,10 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          # Disable keychain auto-discovery — sign only when CSC_LINK is explicitly set
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      # ── Windows: code sign (skipped if cert secrets not set) ───────────────
+      # ── Windows: code sign (signing skipped if cert secrets not set) ───────
       - name: Package (Windows)
         if: matrix.platform == 'win'
         run: npx electron-builder --win --publish always
@@ -84,6 +85,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
       # ── Linux: no signing required ─────────────────────────────────────────
       - name: Package (Linux)
