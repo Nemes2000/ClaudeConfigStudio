@@ -1,34 +1,172 @@
 appId: com.anthropic.claude-config-studio
 productName: Claude Config Studio
+copyright: Copyright © 2026 claude-config-studio contributors
+
 directories:
   output: release
   buildResources: build
 
+# Files to include in the package
 files:
   - dist/**/*
+  - node_modules/**/*
+  - "!node_modules/*/{CHANGELOG.md,README.md,readme.md,readme}"
+  - "!node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
+  - "!node_modules/*.d.ts"
+  - "!node_modules/.bin"
+  - "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}"
+  - "!**/._*"
+  - "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}"
+  - "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}"
 
+# Native modules that must be rebuilt for Electron
+extraResources:
+  - from: node_modules/keytar/build/Release
+    to: native/keytar
+    filter:
+      - "keytar.node"
+
+# Auto-update via GitHub Releases
+publish:
+  provider: github
+  owner: anthropic
+  repo: claude-config-studio
+  releaseType: release
+
+# ─── macOS ───────────────────────────────────────────────────────────────────
 mac:
   target:
-    - dmg
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
   icon: build/icon.icns
   category: public.app-category.developer-tools
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  # notarize via APPLE_ID / APPLE_TEAM_ID / APPLE_APP_SPECIFIC_PASSWORD env vars
+  notarize: false
 
+dmg:
+  # Self-mounting disk image — user drags app to Applications
+  title: Claude Config Studio ${version}
+  icon: build/icon.icns
+  contents:
+    - x: 410
+      y: 150
+      type: link
+      path: /Applications
+    - x: 130
+      y: 150
+      type: file
+  window:
+    width: 540
+    height: 380
+  background: build/dmg-background.png
+  iconSize: 80
+  iconTextSize: 12
+
+# ─── Windows ─────────────────────────────────────────────────────────────────
 win:
   target:
-    - nsis
+    - target: nsis
+      arch:
+        - x64
+    - target: msi
+      arch:
+        - x64
   icon: build/icon.ico
-
-linux:
-  target:
-    - AppImage
-    - deb
-  icon: build/icon.png
-  category: Development
+  # Sign via WINDOWS_CSC_LINK / WINDOWS_CSC_KEY_PASSWORD env vars
+  certificateSubjectName: ""
+  verifyUpdateCodeSignature: false
 
 nsis:
+  # Full interactive installer with progress bar + optional start-menu shortcut
   oneClick: false
   allowToChangeInstallationDirectory: true
+  allowElevation: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Claude Config Studio
+  # Run the app immediately after install
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+  displayLanguageSelector: false
+
+msi:
+  # Windows Installer (MSI) — suitable for enterprise / group-policy deployment
+  oneClick: false
+  perMachine: false
+  runAfterFinish: false
+
+# ─── Linux ───────────────────────────────────────────────────────────────────
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+    - target: rpm
+      arch:
+        - x64
+    - target: snap
+      arch:
+        - x64
+  icon: build/icon.png
+  category: Development
+  synopsis: Manage Claude Code .claude/ configuration folders
+  description: |
+    Desktop application for managing Claude Code .claude/ configuration folders.
+    Provides a visual skill graph, backup/restore, MCP marketplace, and
+    AI-powered suggestions for your Claude Code configurations.
+  maintainer: claude-config-studio contributors <noreply@anthropic.com>
+
+deb:
+  # Self-installing .deb — double-click or `dpkg -i`
+  depends:
+    - libsecret-1-0
+    - libgtk-3-0
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libxtst6
+    - xdg-utils
+    - libatspi2.0-0
+    - libuuid1
+  afterInstall: build/linux/after-install.sh
+  afterRemove: build/linux/after-remove.sh
+
+rpm:
+  depends:
+    - libsecret
+    - gtk3
+    - libnotify
+    - nss
+    - libXScrnSaver
+    - libXtst
+    - xdg-utils
+    - at-spi2-core
+    - libuuid
+
+snap:
+  summary: Manage Claude Code .claude/ configuration folders
+  grade: stable
+  confinement: classic
+  plugs:
+    - default
+    - home
+    - removable-media
+    - network
+    - network-bind
+    - password-manager-service

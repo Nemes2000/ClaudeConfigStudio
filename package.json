@@ -20,6 +20,7 @@
     "@anthropic-ai/sdk": "^0.39.0",
     "chokidar": "^3.6.0",
     "electron-log": "^5.2.0",
+    "electron-updater": "^6.8.3",
     "fs-extra": "^11.2.0",
     "gray-matter": "^4.0.3",
     "keytar": "^7.9.0",
@@ -31,7 +32,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
-    "@vitejs/plugin-react": "^4.7.0",
     "@types/fs-extra": "^11.0.4",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.0.0",
@@ -40,6 +40,7 @@
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
+    "@vitejs/plugin-react": "^4.7.0",
     "electron": "^33.0.0",
     "electron-builder": "^25.0.0",
     "electron-vite": "^3.0.0",

@@ -21,8 +21,8 @@ Thumbs.db
 # JavaScript / Node
 node_modules/
 dist/
-build/
 out/
+# build/ is NOT ignored — it contains icons and entitlements for electron-builder
 .npm/
 *.log
 npm-debug.log*
