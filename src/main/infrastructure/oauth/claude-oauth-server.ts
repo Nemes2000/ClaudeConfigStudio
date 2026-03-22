@@ -8,7 +8,7 @@ import log from 'electron-log'
 const AUTHORIZATION_URL = 'https://claude.ai/oauth/authorize'
 const TOKEN_URL = 'https://api.anthropic.com/oauth/token'
 const CLIENT_ID = 'claude-config-studio'
-const SCOPES = 'openid email profile'
+const SCOPES = 'user:inference'
 const CALLBACK_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes
 
 export interface OAuthTokens {
